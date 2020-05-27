@@ -13,6 +13,7 @@ import Flow
 import Foundation
 import UIKit
 import hCore
+import WatchConnectivity
 
 struct ApolloEnvironmentConfig {
     let endpointURL: URL
@@ -83,17 +84,31 @@ extension ApolloClient {
             from: .applicationSupport
         )
     }
+    
+    static func syncTokenToWatch(authorizationToken: AuthorizationToken) {
+        let watchSessionManager: WatchSessionManager = Dependencies.shared.resolve()
+        try! watchSessionManager.updateApplicationContext(applicationContext: ["authorizationToken": authorizationToken.token])
+    }
 
     static func retreiveToken() -> AuthorizationToken? {
-        return try? Disk.retrieve(
+        let authorizationToken = try? Disk.retrieve(
             "authorization-token.json",
             from: .applicationSupport,
             as: AuthorizationToken.self
         )
+        
+        if let authorizationToken = authorizationToken {
+            syncTokenToWatch(authorizationToken: authorizationToken)
+        }
+                        
+        return authorizationToken
     }
 
     static func saveToken(token: String) {
         let authorizationToken = AuthorizationToken(token: token)
+        
+        syncTokenToWatch(authorizationToken: authorizationToken)
+        
         try? Disk.save(
             authorizationToken,
             to: .applicationSupport,

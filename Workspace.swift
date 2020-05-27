@@ -15,7 +15,7 @@ let workspace = Workspace(
         "Projects/Embark",
         "Projects/Testing",
         "Projects/hCore",
-        "Projects/hCoreUI",
+        "Projects/hCoreUI"
     ],
     schemes: [
         Scheme(name: "WorkspaceApps",

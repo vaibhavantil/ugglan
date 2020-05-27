@@ -31,6 +31,10 @@ let sourceUrls = [
     .appendingPathComponent("GraphQL"),
     sourceRootURL
     .appendingPathComponent("Embark")
+    .appendingPathComponent("GraphQL"),
+    sourceRootURL
+    .appendingPathComponent("App")
+    .appendingPathComponent("WatchExtension")
     .appendingPathComponent("GraphQL")
 ]
 

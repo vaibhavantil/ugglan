@@ -276,6 +276,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self
+        
+        let watchSessionManager = WatchSessionManager()
+        watchSessionManager.startSession()
+        
+        Dependencies.shared.add(module: Module { () -> WatchSessionManager in
+            watchSessionManager
+        })
 
         bag += ApolloClient.initClient().valueSignal.map { _ in true }.plain().atValue { _ in
             Dependencies.shared.add(module: Module { () -> AnalyticsCoordinator in

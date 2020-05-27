@@ -24,11 +24,13 @@ let testsConfigurations: [CustomConfiguration] = [
     .release(name: "Release", settings: ["SWIFT_ACTIVE_COMPILATION_CONDITIONS": "APP_VARIANT_STAGING"], xcconfig: .relativeToRoot("Configurations/iOS/iOS-Base.xcconfig")),
 ]
 
+let projectFrameworkDependencies: [TargetDependency] = [
+    .project(target: "hCore", path: .relativeToRoot("Projects/hCore")),
+    .project(target: "hCoreUI", path: .relativeToRoot("Projects/hCoreUI")),
+]
+
 let appDependencies: [TargetDependency] = [
-    [
-        .project(target: "hCore", path: .relativeToRoot("Projects/hCore")),
-        .project(target: "hCoreUI", path: .relativeToRoot("Projects/hCoreUI")),
-    ],
+    projectFrameworkDependencies,
     sdkFrameworks,
     ExternalDependencies.allCases.map { externalDependency in
         externalDependency.targetDependencies()
@@ -38,7 +40,7 @@ let appDependencies: [TargetDependency] = [
 let project = Project(
     name: "Ugglan",
     organizationName: "Hedvig",
-    packages: [],
+    packages: [.package(url: "https://github.com/apollographql/apollo-ios.git", .upToNextMajor(from: "0.27.1"))],
     targets: [
         Target(
             name: "Ugglan",
@@ -50,7 +52,10 @@ let project = Project(
             sources: ["Sources/**"],
             resources: ["Resources/**", "Config/Test/Resources/**"],
             actions: [],
-            dependencies: appDependencies,
+            dependencies: [
+                appDependencies,
+                [.target(name: "WatchApp")]
+            ].flatMap { $0 },
             settings: Settings(configurations: ugglanConfigurations)
         ),
         Target(
@@ -81,6 +86,34 @@ let project = Project(
             dependencies: appDependencies,
             settings: Settings(configurations: hedvigConfigurations)
         ),
+         Target(name: "WatchApp",
+                 platform: .watchOS,
+                 product: .watch2App,
+                 bundleId: "com.hedvig.test.app.watchApp",
+                 infoPlist: .extendingDefault(with: [
+                        "WKCompanionAppBundleIdentifier": "com.hedvig.test.app"
+                 ]),
+                 resources: "WatchExtension/App/**",
+                 dependencies: [
+                      .target(name: "WatchAppExtension")
+                 ],
+                 settings: Settings(configurations: testsConfigurations)
+            ),
+        Target(name: "WatchAppExtension",
+                 platform: .watchOS,
+                 product: .watch2Extension,
+                 bundleId: "com.hedvig.test.app.watchApp.extension",
+                 infoPlist: .extendingDefault(with: [
+                        "CFBundleDisplayName": "WatchApp Extension"
+                 ]),
+                 sources: ["WatchExtension/Extension/**/*.swift"],
+                 resources: ["WatchExtension/Extension/**/*.xcassets"],
+                 dependencies: [
+                      .package(product: "Apollo"),
+                      .package(product: "ApolloWebSocket")
+                 ],
+                 settings: Settings(configurations: testsConfigurations)
+            )
     ],
     schemes: [
         Scheme(
