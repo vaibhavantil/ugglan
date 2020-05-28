@@ -106,7 +106,7 @@ let project = Project(
                  infoPlist: .extendingDefault(with: [
                         "CFBundleDisplayName": "WatchApp Extension"
                  ]),
-                 sources: ["WatchExtension/Extension/**/*.swift"],
+                 sources: ["WatchExtension/Extension/**/*.swift", "WatchExtension/Sources/**/*.swift"],
                  resources: ["WatchExtension/Extension/**/*.xcassets"],
                  dependencies: [
                       .package(product: "Apollo"),
@@ -132,5 +132,8 @@ let project = Project(
             buildAction: BuildAction(targets: ["Hedvig"]),
             runAction: RunAction(executable: "Hedvig")
         )
-    ]
+    ],
+    additionalFiles: [
+                          .folderReference(path: "WatchExtension/GraphQL")
+                          ]
 )

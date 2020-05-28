@@ -1,0 +1,4 @@
+mutation TriggerClaimChat($claimTypeId: ID) {
+    triggerFreeTextChat
+    triggerClaimChat(input: { claimTypeId: $claimTypeId })
+}

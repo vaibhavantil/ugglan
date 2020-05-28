@@ -1,0 +1,41 @@
+fragment MessageFragment on Message {
+    globalId
+    id
+    header {
+        fromMyself
+        timeStamp
+    }
+    body {
+      ... on MessageBodyText {
+        text
+      }
+      ... on MessageBodyNumber {
+        text
+        placeholder
+      }
+      ... on MessageBodyParagraph {
+        text
+        }
+        ... on MessageBodyAudio {
+        url
+        type
+        text
+}
+
+ ... on MessageBodySingleSelect {
+        text
+        choices {
+            ... on MessageBodyChoicesSelection {
+            value
+            text
+}
+}
+        }
+    }
+}
+
+query ChatMessages {
+    messages {
+        ...MessageFragment
+    }
+}
