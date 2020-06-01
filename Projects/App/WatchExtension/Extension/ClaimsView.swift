@@ -6,10 +6,10 @@
 //  Copyright © 2020 Hedvig AB. All rights reserved.
 //
 
-import Foundation
-import SwiftUI
 import Apollo
 import AVFoundation
+import Foundation
+import SwiftUI
 import UIKit
 
 extension Color {
@@ -21,7 +21,7 @@ extension Color {
 
 extension MessageFragment {
     var textBody: String {
-        print(self.body)
+        print(body)
         if let body = self.body.asMessageBodyText {
             return body.text
         } else if let body = self.body.asMessageBodyParagraph {
@@ -33,15 +33,15 @@ extension MessageFragment {
         } else if let body = self.body.asMessageBodySingleSelect {
             return body.text
         }
-        
+
         return ""
     }
-    
+
     var placeholder: String {
         if let body = self.body.asMessageBodyNumber {
             return body.placeholder ?? "Enter text"
         }
-        
+
         return ""
     }
 }
@@ -55,13 +55,15 @@ extension MessageFragment: Equatable {
 struct LastArrayItem<T, BodyView: View>: View {
     var array: [T]
     var getBody: (_ firstItem: T) -> BodyView
-    
+
     var body: some View {
         Group {
             if array.last != nil {
-                getBody(array.last!)
-            } else {
-                Text("Loading...")
+                getBody(array.last!).transition(.hedvigTransition)
+            }
+
+            if array.last == nil {
+                LoaderView().transition(.hedvigTransition)
             }
         }
     }
@@ -70,7 +72,7 @@ struct LastArrayItem<T, BodyView: View>: View {
 struct OptionalView<T, BodyView: View>: View {
     var value: T?
     var getBody: (_ value: T) -> BodyView
-    
+
     var body: some View {
         Group {
             if value != nil {
@@ -84,53 +86,55 @@ struct SingleSelect: View {
     let message: MessageFragment
     @State var loading: Bool = false
     var onDone: () -> Void
-    
+
     var body: some View {
         Group {
             OptionalView(value: message.body.asMessageBodySingleSelect) { singleSelect in
-                ForEach(singleSelect.choices?.compactMap({ $0 }) ?? [], id: \.asMessageBodyChoicesSelection?.text) { choice in
-                    Button.init(choice.asMessageBodyChoicesSelection?.text ?? "") {
-                     self.onDone()
+                ForEach(singleSelect.choices?.compactMap { $0 } ?? [], id: \.asMessageBodyChoicesSelection?.text) { choice in
+                    Button(choice.asMessageBodyChoicesSelection?.text ?? "") {
+                        self.onDone()
                         Network.shared.apollo.perform(mutation: SendChatSingleSelectResponseMutation(input: .init(globalId: self.message.globalId, body: .init(selectedValue: choice.asMessageBodyChoicesSelection?.value ?? ""))))
-                    }
+                    }.font(.hedvigFootnote).transition(.hedvigTransition)
                 }
             }
         }
     }
 }
 
+extension AnyTransition {
+    static var hedvigTransition: AnyTransition {
+        AnyTransition.scale.combined(with: AnyTransition.opacity.animation(.easeInOut(duration: 0.25))).animation(.easeInOut(duration: 0.25))
+    }
+}
+
 struct MessageDetail: View {
     var message: MessageFragment
     let unreadMessages: [MessageFragment]
-    
+
     @State var response: String = ""
-    
+
     var onReadMessage: () -> Void
-    
+
     var body: some View {
         Group {
             HStack {
-                if message.header.fromMyself {
-                    Spacer()
-                }
                 VStack {
                     Text(message.textBody)
                         .font(.footnote)
                         .foregroundColor(message.header.fromMyself ? Color.messageFromMyselfTextColor : Color.messageFromHedvigTextColor)
                         .padding(10)
+                        .font(.hedvigFootnote)
+                        .frame(maxWidth: .infinity)
                 }
                 .background(message.header.fromMyself ? Color.messageFromMyselfColor : Color.messageFromHedvigColor)
                 .cornerRadius(6)
-                if !message.header.fromMyself {
-                    Spacer()
-                }
-            }
+            }.id(message.globalId).transition(.hedvigTransition)
             if self.unreadMessages.count > 1 {
-                 Button(action: {
+                Button(action: {
                     self.onReadMessage()
-                 }, label: {
-                     Text("Next")
-                 }).transition(.opacity)
+                }, label: {
+                    Text("Next").font(.hedvigFootnote)
+                 }).transition(.hedvigTransition)
             } else if message.body.asMessageBodySingleSelect != nil {
                 SingleSelect(message: message) {
                     self.onReadMessage()
@@ -140,14 +144,14 @@ struct MessageDetail: View {
                     self.onReadMessage()
                 }
             } else if message.body.asMessageBodyParagraph == nil {
-                 Group {
-                     TextField(message.placeholder, text: self.$response)
-                     Button(action: {
+                Group {
+                    TextField(message.placeholder, text: self.$response)
+                    Button(action: {
                         Network.shared.apollo.perform(mutation: SendChatTextResponseMutation(input: .init(globalId: self.message.globalId, body: .init(text: self.response))))
-                     }, label: {
-                         Text("Send")
+                    }, label: {
+                        Text("Send").font(.hedvigFootnote)
                      })
-                 }
+                }
             }
         }.transition(.scale)
     }
@@ -164,10 +168,11 @@ struct ClaimsView: View {
             message.id.contains("claims") && !message.header.fromMyself
         }
     }
+
     @State var messages: [MessageFragment] = []
     @State var timer: Timer? = nil
     @State var isInitialised = false
-        
+
     var body: some View {
         ScrollView {
             VStack {
@@ -176,41 +181,24 @@ struct ClaimsView: View {
                         if let lastMessage = self.unreadMessages.last {
                             self.readMessages.append(lastMessage)
                         }
-                    }.id(message.globalId)
+                    }
                 }
             }.frame(maxWidth: .infinity).padding([.leading, .trailing], 10)
         }.onAppear {
-            guard !self.isInitialised else {
-                return
-            }
-            
-            self.isInitialised = true
-            
             let startTime = Date()
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                Network.shared.apollo.perform(mutation: TriggerClaimChatMutation()) { response in
-                    switch response {
-                   case .success(let result):
-                       print(result)
-                   case .failure:
-                       break
-                   }
-                }
-            }
-            
-            self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+
+            self.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                 Network.shared.apollo.fetch(query: ChatMessagesQuery(), cachePolicy: .fetchIgnoringCacheCompletely) { response in
                     switch response {
-                    case .success(let result):
+                    case let .success(result):
                         if result.errors != nil {
                             return
                         }
-                        
+
                         if let messages = result.data?.messages.compactMap({ $0 }).filter({ message -> Bool in
                             let timeStampInt = Double(message.header.timeStamp) ?? 0
                             return startTime.timeIntervalSince1970 < TimeInterval(timeStampInt / 1000)
-                        }).map({ $0.fragments.messageFragment }) {
+                                   }).map({ $0.fragments.messageFragment }) {
                             if self.messages != messages {
                                 self.messages = messages
                             }
@@ -220,6 +208,26 @@ struct ClaimsView: View {
                     }
                 }
             }
+
+            guard !self.isInitialised else {
+                return
+            }
+
+            self.isInitialised = true
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                Network.shared.apollo.perform(mutation: TriggerClaimChatMutation()) { response in
+                    switch response {
+                    case let .success(result):
+                        print(result)
+                    case .failure:
+                        break
+                    }
+                }
+            }
+        }.onDisappear {
+            self.timer?.invalidate()
+            self.timer = nil
         }
     }
 }

@@ -54,7 +54,7 @@ let project = Project(
             actions: [],
             dependencies: [
                 appDependencies,
-                [.target(name: "WatchApp")]
+                [.target(name: "WatchApp")],
             ].flatMap { $0 },
             settings: Settings(configurations: ugglanConfigurations)
         ),
@@ -70,7 +70,7 @@ let project = Project(
             dependencies: [
                 [.target(name: "Ugglan"),
                  .framework(path: "../../Carthage/Build/iOS/SnapshotTesting.framework"),
-                .project(target: "Testing", path: .relativeToRoot("Projects/Testing"))],
+                 .project(target: "Testing", path: .relativeToRoot("Projects/Testing"))],
             ].flatMap { $0 },
             settings: Settings(configurations: testsConfigurations)
         ),
@@ -86,34 +86,32 @@ let project = Project(
             dependencies: appDependencies,
             settings: Settings(configurations: hedvigConfigurations)
         ),
-         Target(name: "WatchApp",
-                 platform: .watchOS,
-                 product: .watch2App,
-                 bundleId: "com.hedvig.test.app.watchApp",
-                 infoPlist: .extendingDefault(with: [
-                        "WKCompanionAppBundleIdentifier": "com.hedvig.test.app"
-                 ]),
-                 resources: "WatchExtension/App/**",
-                 dependencies: [
-                      .target(name: "WatchAppExtension")
-                 ],
-                 settings: Settings(configurations: testsConfigurations)
-            ),
+        Target(name: "WatchApp",
+               platform: .watchOS,
+               product: .watch2App,
+               bundleId: "com.hedvig.test.app.watchApp",
+               infoPlist: .extendingDefault(with: [
+                   "WKCompanionAppBundleIdentifier": "com.hedvig.test.app",
+               ]),
+               resources: "WatchExtension/App/**",
+               dependencies: [
+                   .target(name: "WatchAppExtension"),
+               ],
+               settings: Settings(configurations: testsConfigurations)),
         Target(name: "WatchAppExtension",
-                 platform: .watchOS,
-                 product: .watch2Extension,
-                 bundleId: "com.hedvig.test.app.watchApp.extension",
-                 infoPlist: .extendingDefault(with: [
-                        "CFBundleDisplayName": "WatchApp Extension"
-                 ]),
-                 sources: ["WatchExtension/Extension/**/*.swift", "WatchExtension/Sources/**/*.swift"],
-                 resources: ["WatchExtension/Extension/**/*.xcassets"],
-                 dependencies: [
-                      .package(product: "Apollo"),
-                      .package(product: "ApolloWebSocket")
-                 ],
-                 settings: Settings(configurations: testsConfigurations)
-            )
+               platform: .watchOS,
+               product: .watch2Extension,
+               bundleId: "com.hedvig.test.app.watchApp.extension",
+               infoPlist: .extendingDefault(with: [
+                   "CFBundleDisplayName": "WatchApp Extension",
+               ]),
+               sources: ["WatchExtension/Extension/**/*.swift", "WatchExtension/Sources/**/*.swift"],
+               resources: ["WatchExtension/Extension/**/*.xcassets", "WatchExtension/Extension/**/*.otf"],
+               dependencies: [
+                   .package(product: "Apollo"),
+                   .package(product: "ApolloWebSocket"),
+               ],
+               settings: Settings(configurations: testsConfigurations)),
     ],
     schemes: [
         Scheme(
@@ -122,8 +120,8 @@ let project = Project(
             buildAction: BuildAction(targets: ["Ugglan"]),
             testAction: TestAction(
                 targets: [TestableTarget(target: TargetReference(stringLiteral: "AppTests"), parallelizable: true)],
-                          arguments: Arguments(environment: ["SNAPSHOT_ARTIFACTS": "/tmp/__SnapshotFailures__"], launch: [:])
-                    ),
+                arguments: Arguments(environment: ["SNAPSHOT_ARTIFACTS": "/tmp/__SnapshotFailures__"], launch: [:])
+            ),
             runAction: RunAction(executable: "Ugglan")
         ),
         Scheme(
@@ -131,9 +129,9 @@ let project = Project(
             shared: true,
             buildAction: BuildAction(targets: ["Hedvig"]),
             runAction: RunAction(executable: "Hedvig")
-        )
+        ),
     ],
     additionalFiles: [
-                          .folderReference(path: "WatchExtension/GraphQL")
-                          ]
+        .folderReference(path: "WatchExtension/GraphQL"),
+    ]
 )

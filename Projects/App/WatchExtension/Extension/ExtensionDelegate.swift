@@ -8,12 +8,25 @@
 
 import WatchKit
 
+class FontToken {}
+
 class ExtensionDelegate: NSObject, WKExtensionDelegate {
     static let sharedManager = WatchSessionManager()
 
     func applicationDidFinishLaunching() {
         // Perform any final initialization of your application.
         Self.sharedManager.startSession()
+
+        let fontPath = Bundle(for: FontToken.self).path(
+            forResource: "FavoritStd-Book",
+            ofType: "otf"
+        )
+        let inData = NSData(contentsOfFile: fontPath!)
+        let provider = CGDataProvider(data: inData!)
+
+        let font = CGFont(provider!)
+        var error: Unmanaged<CFError>?
+        CTFontManagerRegisterGraphicsFont(font!, &error)
     }
 
     func applicationDidBecomeActive() {
@@ -55,5 +68,4 @@ class ExtensionDelegate: NSObject, WKExtensionDelegate {
             }
         }
     }
-
 }
